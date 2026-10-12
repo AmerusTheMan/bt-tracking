@@ -2,7 +2,7 @@
 
 "found_devices": [
         {
-        "device_mac": "AA-AA-AA-AA-AA-AA",
+        "device_mac": "AA-AA-AA-AA-AA-AA"("-" can be replace for ":"),
         "strength": "{integer}",
         "time": "{unix-timestamp}"
         }
