@@ -1,8 +1,18 @@
 from flask import *
+from flask import abort as fabort
+
+
 import hashlib
 import sqlite3
 import re
 from time import time
+
+
+def abort(status_code, message):
+    response = make_response(f'{status_code}\n{message}')
+    response.status_code = status_code
+    fabort(response)
+
 
 def make_app():
     app = Flask(__name__)
@@ -13,14 +23,29 @@ def make_app():
     db = sqlite3.connect(app.config["db_path"])
     db.execute("""
         CREATE TABLE IF NOT EXISTS "scans" (
-            "node_mac"	    STRING,
-            "device_mac"    STRING,
+            "node_mac"	    TEXT,
+            "device_mac"    TEXT,
             "strength"	    INTEGER,
-            "time"	        STRING,
-            "server_minute" STRING
+            "time"	        TEXT,
+        
+        CONSTRAINT fk_node_mac 
+            FOREIGN KEY (node_mac)
+            REFERENCES nodes(node_mac)
         );
     """)
     db.commit()
+
+
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS "nodes" (
+            "node_mac"  TEXT UNIQUE,
+            "coord_x"   FLOAT,
+            "coord_y"	FLOAT,
+            "coord_z"	FLOAT,
+            PRIMARY KEY("node_mac")
+        );
+    """)
+
 
     return app
 
@@ -40,6 +65,7 @@ def get_db():
     if 'db' not in g:
         g.db = sqlite3.connect(app.config["db_path"])
         g.db.row_factory = dict_factory
+        g.db.execute("PRAGMA foreign_keys = ON")
     
 
     return g.db
@@ -86,19 +112,27 @@ def new_scan():
 
     db = get_db()
 
-    for device in scan_data["found_devices"]:
-        print(device)
-        db.execute("""
-            INSERT INTO scans
-            (node_mac, device_mac, strength, time)
-            VALUES
-            (?, ?, ?, ?)    
-        """, (scan_data["node_mac"], device["device_mac"], device["strength"], time()+int(device["time"])))
-        db.commit()
+    try: 
+        for device in scan_data["found_devices"]:
+            db.execute("""
+                INSERT INTO scans
+                (node_mac, device_mac, strength, time)
+                VALUES
+                (?, ?, ?, ?)    
+            """, (scan_data["node_mac"], device["device_mac"], device["strength"], time()+int(device["time"])))
+    except sqlite3.IntegrityError as e:
+        abort(406, e)
 
+    db.commit()
     
 
     return ""
+
+
+@app.route("/time", methods=["GET"])
+def send_time():
+    return str(round(time()))
+
 
 
 
