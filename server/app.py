@@ -55,9 +55,9 @@ def parse_scan_data():
     secret_key = request_data.get("secret_key", "")
 
 
-    if not type(found_devices) == list: abort(406)
-    if not app.config["mac_pattern"].match(node_mac): abort(400)
-    if not secret_key == app.config["secret_key"]: abort(401)
+    if not type(found_devices) == list: abort(406, "type of found devices must be list")
+    if not app.config["mac_pattern"].match(node_mac): abort(400, "node_mac does not match pattern")
+    if not secret_key == app.config["secret_key"]: abort(401, "secret_key does not match")
 
 
     data = {
