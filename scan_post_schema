@@ -1,0 +1,14 @@
+{
+
+"found_devices": [
+        {
+        "device_mac": "AA-AA-AA-AA-AA-AA",
+        "strength": "{integer}",
+        "time": "{unix-timestamp}"
+        }
+    ],
+
+"node_mac": "AA-AA-AA-AA-AA-AA",
+"secret_key": "super_secret_master_key"
+
+}
