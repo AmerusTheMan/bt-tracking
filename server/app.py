@@ -19,6 +19,7 @@ def make_app():
     app.config["db_path"] = "./sqlite.db"
     app.config["secret_key"] = "super_secret_master_key"
     app.config["mac_pattern"] = re.compile("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")
+    app.config["node_binary_path"] = "./node_binary"
 
     db = sqlite3.connect(app.config["db_path"])
     db.execute("""
@@ -61,13 +62,11 @@ def dict_factory(cursor, row):
     return d
 
 def get_db():
-    app.config["db_path"]
     if 'db' not in g:
         g.db = sqlite3.connect(app.config["db_path"])
         g.db.row_factory = dict_factory
         g.db.execute("PRAGMA foreign_keys = ON")
     
-
     return g.db
 
 
@@ -79,7 +78,6 @@ def parse_scan_data():
     found_devices = request_data.get("found_devices", [])
     node_mac = request_data.get("node_mac", "")
     secret_key = request_data.get("secret_key", "")
-
 
     if not type(found_devices) == list: abort(406, "type of found devices must be list")
     if not app.config["mac_pattern"].match(node_mac): abort(400, "node_mac does not match pattern")
@@ -95,13 +93,20 @@ def parse_scan_data():
     return data
 
 
+def get_local_binary_md5():
+    node_binary = open("node_binary.bin", "rb").read()
+    return hashlib.md5(node_binary).hexdigest()
+    
+
+
 
 @app.route("/binary", methods=["GET"])
 def send_binary():
-    sketch_md5 = request.headers.get(["x-esp32-sketch-md5"], None)
-    if not sketch_md5: abort(400)
-    server_sketch_md5 = hashlib.md5(open("node_binary.bin", "rb").read()).hexdigest()
-
+    node_binary_md5 = request.headers.get(["x-esp32-sketch-md5"], None)
+    if not node_binary_md5: abort(400, "missing header 'x-esp32-sketch-md5'")
+    
+    local_binary_md5 = get_local_binary_md5()
+    if node_binary_md5 == local_binary_md5: abort(304, "binary md5 is same")
 
     return send_file("node_binary.bin")
 
