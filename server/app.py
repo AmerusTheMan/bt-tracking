@@ -126,7 +126,11 @@ def new_scan():
                 (?, ?, ?, ?)    
             """, (scan_data["node_mac"], device["device_mac"], device["strength"], time()+int(device["time"])))
     except sqlite3.IntegrityError as e:
+        db.rollback()
         abort(406, e)
+    except KeyError as e:
+        db.rollback()
+        abort(406, f"missing key in found device: '{e}'")
 
     db.commit()
     
