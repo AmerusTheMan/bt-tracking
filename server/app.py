@@ -6,6 +6,7 @@ import hashlib
 import sqlite3
 import re
 from time import time
+import app_secrets
 
 
 def abort(status_code, message):
@@ -17,7 +18,7 @@ def abort(status_code, message):
 def make_app():
     app = Flask(__name__)
     app.config["db_path"] = "./sqlite.db"
-    app.config["secret_key"] = "super_secret_master_key"
+    app.config["secret_key"] = app_secrets.secret_key
     app.config["mac_pattern"] = re.compile("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")
     app.config["node_binary_path"] = "./node_binary"
 
