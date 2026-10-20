@@ -2,13 +2,16 @@
 
 "found_devices": [
         {
-        "device_mac": "AA-AA-AA-AA-AA-AA"("-" can be replace for ":"),
+        "device_mac": {string},
         "strength": "{integer}",
         "time": "{unix-timestamp}"
         }
     ],
 
-"node_mac": "AA-AA-AA-AA-AA-AA",
+"node_mac": {string},
 "secret_key": "super_secret_master_key"
 
 }
+
+letters in mac address can be upper- or lower-case
+each number-letter pair should be seperated by "-" or ":"
