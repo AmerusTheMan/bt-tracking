@@ -19,8 +19,8 @@ def make_app():
     app = Flask(__name__)
     app.config["db_path"] = "./sqlite.db"
     app.config["secret_key"] = app_secrets.secret_key
-    app.config["mac_pattern"] = re.compile("^([0-9A-F]{2}[:]){5}([0-9A-F]{2})$")
-    app.config["node_binary_path"] = "./node_binary"
+    app.config["mac_pattern"] = re.compile("^([0-9a-f]{2}[:]){5}([0-9a-f]{2})$")
+    app.config["node_binary_path"] = "./binary.bin"
 
     db = sqlite3.connect(app.config["db_path"])
     db.execute("""
@@ -100,21 +100,22 @@ def parse_scan_data():
 
 
 def get_local_binary_md5():
-    node_binary = open("node_binary.bin", "rb").read()
+    node_binary = open(app.config["node_binary_path"], "rb").read()
     return hashlib.md5(node_binary).hexdigest()
     
 
 
 
-@app.route("/binary", methods=["GET"])
+@app.route("/file.bin", methods=["GET"])
 def send_binary():
-    node_binary_md5 = request.headers.get(["x-esp32-sketch-md5"], None)
+    node_binary_md5 = request.headers.get("X-Esp32-Sketch-Md5", None)
     if not node_binary_md5: abort(400, "missing header 'x-esp32-sketch-md5'")
+    
     
     local_binary_md5 = get_local_binary_md5()
     if node_binary_md5 == local_binary_md5: abort(304, "binary md5 is same")
 
-    return send_file("node_binary.bin")
+    return send_file(app.config["node_binary_path"])
 
 
 @app.route("/scans/new", methods=["POST"])
