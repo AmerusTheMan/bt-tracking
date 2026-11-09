@@ -19,7 +19,7 @@ def make_app():
     app = Flask(__name__)
     app.config["db_path"] = "./sqlite.db"
     app.config["secret_key"] = app_secrets.secret_key
-    app.config["mac_pattern"] = re.compile("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")
+    app.config["mac_pattern"] = re.compile("^([0-9A-F]{2}[:]){5}([0-9A-F]{2})$")
     app.config["node_binary_path"] = "./node_binary"
 
     db = sqlite3.connect(app.config["db_path"])
@@ -44,6 +44,8 @@ def make_app():
             "coord_x"   FLOAT,
             "coord_y"	FLOAT,
             "coord_z"	FLOAT,
+            "room"      INT,
+            "id"        INT,
             PRIMARY KEY("node_mac")
         );
     """)
@@ -71,6 +73,9 @@ def get_db():
     return g.db
 
 
+def is_mac_addr(mac):
+    return app.config["mac_pattern"].match(mac) 
+
 
 def parse_scan_data():
 
@@ -81,7 +86,7 @@ def parse_scan_data():
     secret_key = request_data.get("secret_key", "")
 
     if not type(found_devices) == list: abort(406, "type of found devices must be list")
-    if not app.config["mac_pattern"].match(node_mac): abort(400, "node_mac does not match pattern")
+    if not is_mac_addr(node_mac): abort(400, "node_mac does not match pattern")
     if not secret_key == app.config["secret_key"]: abort(401, "secret_key does not match")
 
 
@@ -120,28 +125,32 @@ def new_scan():
 
     try: 
         for device in scan_data["found_devices"]:
+            assert is_mac_addr(device["device_mac"]), "device_mac does not match pattern"
             db.execute("""
                 INSERT INTO scans
                 (node_mac, device_mac, strength, time)
                 VALUES
                 (?, ?, ?, ?)    
-            """, (scan_data["node_mac"], device["device_mac"], device["strength"], time()+int(device["time"])))
+            """, (scan_data["node_mac"], device["device_mac"], device["strength"], int(device["time"])))
     except sqlite3.IntegrityError as e:
         db.rollback()
-        abort(406, e)
+        abort(406, "node_mac is not registered in database")
     except KeyError as e:
         db.rollback()
-        abort(406, f"missing key in found device: '{e}'")
+        abort(406, f"missing key in found device: {e}")
+    except AssertionError as e:
+        db.rollback()
+        abort(406, e)
 
     db.commit()
     
 
-    return ""
+    return jsonify("204")
 
 
 @app.route("/time", methods=["GET"])
 def send_time():
-    return str(round(time()))
+    return str(round(time()*1000, 1))
 
 
 

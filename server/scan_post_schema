@@ -13,5 +13,5 @@
 
 }
 
-letters in mac address can be upper- or lower-case
-each number-letter pair should be seperated by "-" or ":"
+letters in mac address must be upper-case
+each number-letter pair should be seperated by ":"
